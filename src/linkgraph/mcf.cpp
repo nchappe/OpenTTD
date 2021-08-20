@@ -293,12 +293,14 @@ void MultiCommodityFlow::Dijkstra(NodeID source_node, PathVector &paths)
 			uint distance = DistanceMaxPlusManhattan(this->job[from].XY(), this->job[to].XY()) + 1;
 			/* Compute a default travel time from the distance and an average speed of 1 tile/day. */
 			uint time = (edge.TravelTime() != 0) ? edge.TravelTime() + DAY_TICKS : distance * DAY_TICKS;
-			uint distance_anno = express ? time : distance;
+			uint64 cost = express ? time : distance;
+			/* Penalize saturated links. */
+			cost = cost + cost * edge.Flow() * edge.Flow() / capacity / capacity;
 
 			Tannotation *dest = static_cast<Tannotation *>(paths[to]);
-			if (dest->IsBetter(source, capacity, capacity - edge.Flow(), distance_anno)) {
+			if (dest->IsBetter(source, capacity, capacity - edge.Flow(), cost)) {
 				annos.erase(dest);
-				dest->Fork(source, capacity, capacity - edge.Flow(), distance_anno);
+				dest->Fork(source, capacity, capacity - edge.Flow(), cost);
 				dest->UpdateAnnotation();
 				annos.insert(dest);
 			}
