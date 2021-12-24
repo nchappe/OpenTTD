@@ -35,8 +35,9 @@ protected:
 };
 
 /**
- * First pass of the MCF calculation. Saturates shortest paths first, creates
- * new paths if needed, eliminates cycles. This calculation is of exponential
+ * First pass of the MCF calculation.
+ * The cost of a link depends on its distance, its travel time, and its saturation.
+ * Creates new paths if needed, eliminates cycles. This calculation is of exponential
  * complexity in the number of nodes but the constant factors are sufficiently
  * small to make it usable for most real-life link graph components. You can
  * deal with performance problems that might occur here in multiple ways:
@@ -60,8 +61,8 @@ public:
 };
 
 /**
- * Second pass of the MCF calculation. Saturates paths with most capacity left
- * first and doesn't create any paths along edges that haven't been visited in
+ * Second pass of the MCF calculation. Uses the same cost function as the first pass but
+ * doesn't create any paths along edges that haven't been visited in
  * the first pass. This is why it doesn't have to do any cycle detection and
  * elimination. As cycle detection is the most intense problem in the first
  * pass this pass is cheaper. The accuracy is used here, too.

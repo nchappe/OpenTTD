@@ -46,48 +46,6 @@ public:
 };
 
 /**
- * Capacity-based annotation for use in the Dijkstra algorithm. This annotation
- * rates paths according to the maximum capacity of their edges. The Dijkstra
- * algorithm still gives meaningful results like this as the capacity of a path
- * can only decrease or stay the same if you add more edges.
- */
-class CapacityAnnotation : public Path {
-	int cached_annotation;
-
-public:
-
-	/**
-	 * Constructor.
-	 * @param n ID of node to be annotated.
-	 * @param source If the node is the source of its path.
-	 */
-	CapacityAnnotation(NodeID n, bool source = false) : Path(n, source) {}
-
-	bool IsBetter(const CapacityAnnotation *base, uint cap, int free_cap, uint dist) const;
-
-	/**
-	 * Return the actual value of the annotation, in this case the capacity.
-	 * @return Capacity.
-	 */
-	inline int GetAnnotation() const { return this->cached_annotation; }
-
-	/**
-	 * Update the cached annotation value
-	 */
-	inline void UpdateAnnotation()
-	{
-		this->cached_annotation = this->GetCapacityRatio();
-	}
-
-	/**
-	 * Comparator for std containers.
-	 */
-	struct Comparator {
-		bool operator()(const CapacityAnnotation *x, const CapacityAnnotation *y) const;
-	};
-};
-
-/**
  * Iterator class for getting the edges in the order of their next_edge
  * members.
  */
@@ -220,29 +178,6 @@ bool DistanceAnnotation::IsBetter(const DistanceAnnotation *base, uint cap,
 		 * If both paths are out of capacity, do the regular distance
 		 * comparison. */
 		return this->free_capacity > 0 ? false : (base->distance + dist < this->distance);
-	}
-}
-
-/**
- * Determines if an extension to the given Path with the given parameters is
- * better than this path.
- * @param base Other path.
- * @param free_cap Capacity of the new edge to be added to base.
- * @param dist Distance of the new edge.
- * @return True if base + the new edge would be better than the path associated
- * with this annotation.
- */
-bool CapacityAnnotation::IsBetter(const CapacityAnnotation *base, uint cap,
-		int free_cap, uint dist) const
-{
-	int min_cap = Path::GetCapacityRatio(std::min(base->free_capacity, free_cap), std::min(base->capacity, cap));
-	int this_cap = this->GetCapacityRatio();
-	if (min_cap == this_cap) {
-		/* If the capacities are the same and the other path isn't disconnected
-		 * choose the shorter path. */
-		return base->distance == UINT_MAX ? false : (base->distance + dist < this->distance);
-	} else {
-		return min_cap > this_cap;
 	}
 }
 
@@ -553,7 +488,7 @@ MCF2ndPass::MCF2ndPass(LinkGraphJob &job) : MultiCommodityFlow(job)
 		for (NodeID source = 0; source < size; ++source) {
 			if (finished_sources[source]) continue;
 
-			this->Dijkstra<CapacityAnnotation, FlowEdgeIterator>(source, paths);
+			this->Dijkstra<DistanceAnnotation, FlowEdgeIterator>(source, paths);
 
 			bool source_demand_left = false;
 			for (NodeID dest = 0; dest < size; ++dest) {
@@ -590,19 +525,6 @@ bool Greater(T x_anno, T y_anno, NodeID x, NodeID y)
 	if (x_anno > y_anno) return true;
 	if (x_anno < y_anno) return false;
 	return x > y;
-}
-
-/**
- * Compare two capacity annotations.
- * @param x First capacity annotation.
- * @param y Second capacity annotation.
- * @return If x is better than y.
- */
-bool CapacityAnnotation::Comparator::operator()(const CapacityAnnotation *x,
-		const CapacityAnnotation *y) const
-{
-	return x != y && Greater<int>(x->GetAnnotation(), y->GetAnnotation(),
-			x->GetNode(), y->GetNode());
 }
 
 /**
