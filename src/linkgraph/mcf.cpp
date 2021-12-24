@@ -347,9 +347,9 @@ void MultiCommodityFlow::CleanupPaths(NodeID source_id, PathVector &paths)
 uint MultiCommodityFlow::PushFlow(Edge &edge, Path *path, uint accuracy,
 		uint max_saturation)
 {
-	assert(edge.UnsatisfiedDemand() > 0);
-	uint flow = Clamp(edge.Demand() / accuracy, 1, edge.UnsatisfiedDemand());
-	flow = path->AddFlow(flow, this->job, max_saturation);
+	assert(edge.UnsatisfiedDemand(max_saturation) > 0);
+	uint flow = Clamp(edge.Demand() / accuracy, 1, edge.UnsatisfiedDemand(max_saturation));
+	flow = path->AddFlow(flow, this->job, UINT_MAX);
 	edge.SatisfyDemand(flow);
 	return flow;
 }
@@ -512,22 +512,21 @@ MCF1stPass::MCF1stPass(LinkGraphJob &job) : MultiCommodityFlow(job)
 		for (NodeID source = 0; source < size; ++source) {
 			if (finished_sources[source]) continue;
 
-			/* First saturate the shortest paths. */
 			this->Dijkstra<DistanceAnnotation, GraphEdgeIterator>(source, paths);
 
 			bool source_demand_left = false;
 			for (NodeID dest = 0; dest < size; ++dest) {
 				Edge edge = job[source][dest];
-				if (edge.UnsatisfiedDemand() > 0) {
+				if (edge.UnsatisfiedDemand(this->exploration_threshold) > 0) {
 					Path *path = paths[dest];
 					assert(path != nullptr);
 					if (path->GetFreeCapacity() > INT_MIN && this->PushFlow(edge, path,
-							accuracy, UINT_MAX) > 0) {
+							accuracy, this->exploration_threshold) > 0) {
 						/* If a path has been found there is a chance we can
 						 * find more. */
-						more_loops = more_loops || (edge.UnsatisfiedDemand() > 0);
+						more_loops = more_loops || (edge.UnsatisfiedDemand(this->exploration_threshold) > 0);
 					}
-					if (edge.UnsatisfiedDemand() > 0) source_demand_left = true;
+					if (edge.UnsatisfiedDemand(this->exploration_threshold) > 0) source_demand_left = true;
 				}
 			}
 			finished_sources[source] = !source_demand_left;

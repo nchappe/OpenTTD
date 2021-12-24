@@ -18,7 +18,8 @@ protected:
 	 * @param job Link graph job being executed.
 	 */
 	MultiCommodityFlow(LinkGraphJob &job) : job(job),
-			max_saturation(job.Settings().short_path_saturation)
+			max_saturation(job.Settings().short_path_saturation),
+			exploration_threshold(job.Settings().short_path_saturation)
 	{}
 
 	template<class Tannotation, class Tedge_iterator>
@@ -30,6 +31,7 @@ protected:
 
 	LinkGraphJob &job;   ///< Job we're working with.
 	uint max_saturation; ///< Maximum saturation for edges.
+	uint exploration_threshold; ///< How much demand should be satisfied during the first pass.
 };
 
 /**

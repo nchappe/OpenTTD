@@ -100,6 +100,16 @@ public:
 		uint UnsatisfiedDemand() const { return this->anno.unsatisfied_demand; }
 
 		/**
+		 * Get the transport demand that hasn't been satisfied by flows, yet.
+		 * @param cap Cap to apply to the demand, in percents
+		 * @return Unsatisfied demand.
+		 */
+		uint UnsatisfiedDemand(uint cap) const
+		{
+			return std::max(0, static_cast<int>(this->anno.unsatisfied_demand) - static_cast<int>(this->anno.demand * (100 - cap) / 100));
+		}
+
+		/**
 		 * Get the total flow on the edge.
 		 * @return Flow.
 		 */
