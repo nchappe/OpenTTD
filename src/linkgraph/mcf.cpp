@@ -521,17 +521,11 @@ MCF1stPass::MCF1stPass(LinkGraphJob &job) : MultiCommodityFlow(job)
 				if (edge.UnsatisfiedDemand() > 0) {
 					Path *path = paths[dest];
 					assert(path != nullptr);
-					/* Generally only allow paths that don't exceed the
-					 * available capacity. But if no demand has been assigned
-					 * yet, make an exception and allow any valid path *once*. */
-					if (path->GetFreeCapacity() > 0 && this->PushFlow(edge, path,
-							accuracy, this->max_saturation) > 0) {
+					if (path->GetFreeCapacity() > INT_MIN && this->PushFlow(edge, path,
+							accuracy, UINT_MAX) > 0) {
 						/* If a path has been found there is a chance we can
 						 * find more. */
 						more_loops = more_loops || (edge.UnsatisfiedDemand() > 0);
-					} else if (edge.UnsatisfiedDemand() == edge.Demand() &&
-							path->GetFreeCapacity() > INT_MIN) {
-						this->PushFlow(edge, path, accuracy, UINT_MAX);
 					}
 					if (edge.UnsatisfiedDemand() > 0) source_demand_left = true;
 				}
